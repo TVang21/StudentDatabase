@@ -2,6 +2,12 @@
 * version 5.7.37
 */
 
+CREATE TABLE PROFESSOR(
+professor_id  CHAR(9),
+professor_name VARCHAR(50),
+PRIMARY KEY (professor_id)
+);
+
 CREATE TABLE STUDENT(
 student_id CHAR(9),
 student_name VARCHAR(50),
@@ -17,11 +23,13 @@ PRIMARY KEY (student_id),
 FOREIGN KEY (pid) REFERENCES PROFESSOR (professor_id)
 );
 
-CREATE TABLE PROFESSOR(
-professor_id  CHAR(9),
-professor_name VARCHAR(50),
-PRIMARY KEY (professor_id)
+
+CREATE TABLE SUBJECTS(
+subject_id CHAR(9),
+subject_name VARCHAR(50),
+PRIMARY KEY (subject_id)
 );
+
 
 CREATE TABLE COURSE(
 course_id CHAR(6),
@@ -32,16 +40,6 @@ PRIMARY KEY (course_id),
 FOREIGN KEY (subid) REFERENCES SUBJECTS (subject_id)
 );
 
-
-
-
-
-
-CREATE TABLE SUBJECTS(
-subject_id CHAR(9),
-subject_name VARCHAR(50),
-PRIMARY KEY (subject_id)
-);
 
 CREATE TABLE EXAMS(
 exam_id CHAR(9),
@@ -62,8 +60,9 @@ sid CHAR (9),
 eid CHAR(9),
 PRIMARY KEY (sid, eid),
 FOREIGN KEY (sid) REFERENCES STUDENT (student_id),
-FOREIGN KEY (eid) REFERENCES COURSE (exam_id)
+FOREIGN KEY (eid) REFERENCES EXAMS (exam_id)
 );
+
 
 CREATE TABLE ATTENDS(
 sid CHAR (9),
@@ -149,19 +148,6 @@ CREATE TRIGGER GRAD_UPDATE
 DELIMITER ;
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 DELIMITER $$
 CREATE FUNCTION STUDENTCOUNT(student CHAR(20)) RETURNS INT
 BEGIN
@@ -182,3 +168,4 @@ BEGIN
     RETURN counter;
 END $$
 DELIMITER ;
+
