@@ -1,0 +1,12 @@
+<html>
+<body>
+
+<form action="PrepStateInsert.php" method="post">
+
+ProfessorID: <input type="text" name="pid"><br>
+Name: <input type="text" name="name"><br>
+	</select><br>
+<input type ="submit">
+
+</body>
+</html>

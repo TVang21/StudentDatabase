@@ -1,0 +1,184 @@
+/* MySQL
+* version 5.7.37
+*/
+
+CREATE TABLE STUDENT(
+student_id CHAR(9),
+student_name VARCHAR(50),
+address VARCHAR(255),
+date_of_birth DATE,
+current_units INT,
+units_needed INT,
+pid CHAR(9),
+student_type ENUM('undergrad','grad'),
+class DATE,
+Degree_program VARCHAR (50), 
+PRIMARY KEY (student_id),
+FOREIGN KEY (pid) REFERENCES PROFESSOR (professor_id)
+);
+
+CREATE TABLE PROFESSOR(
+professor_id  CHAR(9),
+professor_name VARCHAR(50),
+PRIMARY KEY (professor_id)
+);
+
+CREATE TABLE COURSE(
+course_id CHAR(6),
+course_name VARCHAR(50),
+units INT,
+subid CHAR(9),
+PRIMARY KEY (course_id),
+FOREIGN KEY (subid) REFERENCES SUBJECTS (subject_id)
+);
+
+
+
+
+
+
+CREATE TABLE SUBJECTS(
+subject_id CHAR(9),
+subject_name VARCHAR(50),
+PRIMARY KEY (subject_id)
+);
+
+CREATE TABLE EXAMS(
+exam_id CHAR(9),
+grade VARCHAR(1),
+PRIMARY KEY (exam_id)
+);
+
+CREATE TABLE TAKES(
+pid CHAR (9),
+cid CHAR(9),
+PRIMARY KEY (pid, cid),
+FOREIGN KEY (pid) REFERENCES PROFESSOR (professor_id),
+FOREIGN KEY (cid) REFERENCES COURSE (course_id)
+);
+
+CREATE TABLE TAKES_ON(
+sid CHAR (9),
+eid CHAR(9),
+PRIMARY KEY (sid, eid),
+FOREIGN KEY (sid) REFERENCES STUDENT (student_id),
+FOREIGN KEY (eid) REFERENCES COURSE (exam_id)
+);
+
+CREATE TABLE ATTENDS(
+sid CHAR (9),
+cid CHAR(9),
+PRIMARY KEY (sid, cid),
+FOREIGN KEY (sid) REFERENCES STUDENT (student_id),
+FOREIGN KEY (cid) REFERENCES COURSE (course_id)
+);
+
+CREATE TABLE CONDUCTS(
+pid CHAR (9),
+eid CHAR(9),
+PRIMARY KEY (pid, eid),
+FOREIGN KEY (pid) REFERENCES PROFESSOR (professor_id),
+FOREIGN KEY (eid) REFERENCES EXAMS (exam_id)
+);
+
+
+
+CREATE VIEW UNDERGRAD_STUDENT as
+SELECT student_id, student_name, address, date_of_birth, current_units, units_needed, class 
+FROM STUDENT
+WHERE student_type = 'undergrad';
+
+
+CREATE TABLE GRADUATE_STUDENT (
+SELECT student_id, student_name, address, date_of_birth, current_units, units_needed, degree_program
+FROM STUDENT
+WHERE student_type = 'grad'
+);
+
+DELIMITER //
+
+CREATE TRIGGER GRAD_INSERT
+	BEFORE INSERT ON STUDENT
+	FOR EACH ROW
+	BEGIN
+		IF new.student_type = 'grad' THEN
+			INSERT INTO GRADUATE_STUDENT (student_id, student_name, address, date_of_birth, current_units, units_needed, degree_program)
+			VALUES (new.student_id, new.student_name, new.address, new.date_of_birth, new.current_units, new.units_needed, new.degree_program);
+		END IF;
+	END; //
+DELIMITER ;
+
+
+DELIMITER //
+
+CREATE TRIGGER GRAD_DELETE
+	BEFORE DELETE ON STUDENT
+	FOR EACH ROW
+	BEGIN
+		IF old.student_type = 'grad' THEN
+			DELETE FROM GRADUATE_STUDENT WHERE student_id = old.student_id;
+		END IF;
+	END; //
+DELIMITER ;
+
+DELIMITER //
+
+CREATE TRIGGER GRAD_UPDATE
+	BEFORE UPDATE ON STUDENT
+	FOR EACH ROW
+	BEGIN
+		IF new.student_type = 'grad' THEN
+			IF student_type <> 'grad' THEN
+				INSERT INTO GRADUATE_STUDENT (student_id, student_name, address, date_of_birth, current_units, units_needed, degree_program)
+				VALUES (new.student_id, new.student_name, new.address, new.date_of_birth, new.current_units, new.units_needed, new.degree_program);
+			ELSE
+				IF old.student_type <> new.student_type THEN
+					DELETE FROM GRADUATE_STUDENT WHERE student_id = old.student_id;
+					INSERT INTO GRADUATE_STUDENT (student_id, student_name, address, date_of_birth, current_units, units_needed, degree_program)
+					VALUES (new.student_id, new.student_name, new.address, new.date_of_birth, new.current_units, new.units_needed, new.degree_program);
+				ELSE
+					UPDATE GRADUATE_STUDENT SET student_id = new.student_id, student_name = new.student_name, address = new.address, date_of_birth = new.date_of_birth, current_units = new.current_units, units_needed = new.units_needed, degree_program = new.degree_program
+					WHERE student_id = new.student_id;
+				END IF;
+			END IF;
+		ELSEIF old.student_type = 'grad' THEN
+			DELETE FROM GRADUATE_STUDENT WHERE student_id = old.student_id;
+		END IF;
+	END; //
+
+DELIMITER ;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+DELIMITER $$
+CREATE FUNCTION STUDENTCOUNT(student CHAR(20)) RETURNS INT
+BEGIN
+    DECLARE counter INT DEFAULT 0;
+    IF student = 'undergrad' THEN
+        (SELECT COUNT(*) INTO counter FROM STUDENT
+         WHERE student_type = 'undergrad');
+    ELSEIF student = 'grad' THEN
+        (SELECT COUNT(*) INTO counter FROM STUDENT
+         WHERE student_type = 'grad');
+    ELSEIF student = 'other' THEN
+        (SELECT COUNT(*) INTO counter FROM STUDENT
+         WHERE student_type = NULL);
+    ELSE
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Error: Please enter a valid student type.';
+    END IF;
+    RETURN counter;
+END $$
+DELIMITER ;
